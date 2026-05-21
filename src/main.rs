@@ -2,7 +2,6 @@ mod args;
 
 use std::io::Error as IOError;
 use std::fs::{read_to_string};
-use std::env::args;
 use std::process::exit;
 use std::process::Command;
 use std::os::unix::process::CommandExt;
