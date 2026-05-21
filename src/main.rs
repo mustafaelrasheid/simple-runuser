@@ -36,6 +36,7 @@ fn get_conf(filename: &str, query: &str)
 fn get_user_info(username: &str)
 -> Result<Option<(u32, u32, String, String)>, Box<dyn Error>> {
     let info = get_conf("/etc/passwd", username)?;
+    
     match info {
         Some(parts) => {
             let [_, _,
