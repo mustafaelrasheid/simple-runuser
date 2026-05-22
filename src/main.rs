@@ -7,7 +7,7 @@ use std::process::exit;
 use std::process::Command;
 use std::os::unix::process::CommandExt;
 use std::error::Error;
-use nix::unistd::{setuid, setgid, Uid, Gid};
+use nix::unistd::{setuid, setgid, setgroups, Uid, Gid};
 use clap::Parser;
 use crate::args::Cli;
 
@@ -87,6 +87,7 @@ fn run(
     path: &str,
     uid: u32,
     gid: u32,
+    supp_gids: &Vec<Gid>,
     home_dir: &str,
     shell_path: &str,
     username: &str,
@@ -119,7 +120,11 @@ fn run(
         }
     }
     cmd.args(args);
-
+    setgroups(supp_gids.as_slice())
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to set supp Gid to {} due to {}", uid, e);
+            exit(1);
+        });
     setgid(Gid::from_raw(gid))
         .unwrap_or_else(|e| {
             eprintln!("Failed to set Gid to {} due to {}", gid, e);
@@ -167,11 +172,36 @@ fn main() {
                         exit(1);
                     })
             } else { gid };
+            let supp_gids = if let Some(supp_groups) = cli.supp_group {
+                let mut supp_gids = Vec::new();
+
+                for supp_group in supp_groups {
+                    supp_gids.push(
+                        Gid::from_raw(
+                            get_group_info(&supp_group)
+                                .unwrap_or_else(|e| {
+                                    eprintln!(
+                                        "Failed to get supp group info: {}",
+                                        e
+                                    );
+                                    exit(1);
+                                })
+                                .unwrap_or_else(|| {
+                                    eprintln!("Supp group doesn't exist");
+                                    exit(1);
+                                })
+                        )
+                    );
+                }
+
+                Some(supp_gids)
+            } else { None };
 
             run(
                 &path,
                 uid,
                 gid,
+                &supp_gids.unwrap_or(Vec::new()),
                 &home_dir,
                 &shell_path,
                 &username,
