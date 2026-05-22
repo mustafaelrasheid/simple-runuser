@@ -118,13 +118,13 @@ fn main() {
     let cli = Cli::parse();
     
     if let Some(username) = cli.user {
-        let path = cli.rest[0].clone();
-        let command_args = cli.rest[1..].to_vec();
-        
         if cli.rest.is_empty() {
             eprintln!("Incorrect usage");
             exit(1);
         }
+        let path = cli.rest[0].clone();
+        let command_args = cli.rest[1..].to_vec();
+
         if let Some((uid, gid, home_dir, shell_path)) = 
             get_user_info(&username)
                 .unwrap_or_else(|e| {
