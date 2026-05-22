@@ -190,7 +190,7 @@ fn main() {
             let path = cli.rest[0].clone();
             let command_args = cli.rest[1..].to_vec();
 
-            (username, path, command_args)
+            (username, Some(path), command_args)
         },
         None => {
             let mut rest = cli.rest.clone();
@@ -210,7 +210,7 @@ fn main() {
                 command_args.insert(0, "-".to_string());
             }
 
-            (username, "sh".to_string(), command_args)
+            (username, cli.shell, command_args)
         }
     };
     let (uid, gid, home_dir, shell_path) = get_user_info(&username)
@@ -223,7 +223,7 @@ fn main() {
     });
 
     run(
-        &path,
+        &path.unwrap_or(shell_path.clone()),
         uid,
         overwritten_gid.unwrap_or(gid),
         &supp_gids.unwrap_or(Vec::new()),
