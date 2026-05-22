@@ -13,12 +13,13 @@ pub struct Cli {
     pub user: Option<String>,
     #[arg(
         short = 'p',
-        long, visible_short_alias = 'm',
+        long = "preserve_environment",
+        visible_short_alias = 'm',
         action=ArgAction::SetTrue
     )]
-    pub preserve_enviroment: bool,
-    #[arg(short = 'w', long, value_name="list")]
-    pub whitelist_enviroment: Option<Vec<String>>,
+    pub preserve_env: bool,
+    #[arg(short = 'w', long = "whitelist_environment", value_name="list")]
+    pub whitelist_env: Option<Vec<String>>,
     #[arg(short = 'g', long, value_name="group")]
     pub group: Option<String>,
     #[arg(short = 'G', long, value_name="supp-group")]
