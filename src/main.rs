@@ -146,8 +146,8 @@ fn main() {
                 &shell_path,
                 &username,
                 &command_args,
-                cli.preserve_enviroment,
-                &cli.whitelist_enviroment.unwrap_or(Vec::new())
+                cli.preserve_env,
+                &cli.whitelist_env.unwrap_or(Vec::new())
             );
         } else {
             eprintln!("User doesn't exist");
