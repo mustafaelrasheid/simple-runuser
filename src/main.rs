@@ -210,7 +210,11 @@ fn main() {
                 command_args.insert(0, "-l".to_string());
             }
             if cli.fast {
-                command_args.push("-f".to_string());
+                command_args.insert(0 ,"-f".to_string());
+            }
+            if let Some(cmd) = &cli.command {
+                command_args.push("-c".to_string());
+                command_args.push(cmd.clone());
             }
 
             (username, cli.shell, command_args)
