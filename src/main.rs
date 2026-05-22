@@ -40,7 +40,7 @@ fn get_user_info(username: &str)
         Some(parts) => {
             let [_, _,
                 ref uid_str, ref gid_str, _,
-                ref home_dir, ref entry_path]
+                ref home_dir, ref shell_path]
                 = parts[0..7] else {
                 return Err(
                     "Invalid passwd format".into()
@@ -54,7 +54,7 @@ fn get_user_info(username: &str)
                     uid,
                     gid,
                     home_dir.to_string(),
-                    entry_path.to_string()
+                    shell_path.to_string()
                 ))
             );
         }
@@ -69,14 +69,30 @@ fn run(
     uid: u32,
     gid: u32,
     home_dir: &str,
+    shell_path: &str,
     username: &str,
-    args: &Vec<String>
+    args: &Vec<String>,
+    preserve_env: bool,
 ) {
+    const ROOT_PATH: &str = 
+        "/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin";
     let mut cmd = Command::new(path);
     
+    if !preserve_env {
+        cmd.env_clear();
+        match username {
+            "root" => {
+                cmd.env("PATH", ROOT_PATH);
+            },
+            _ => {
+                cmd.env("PATH", "/usr/local/bin:/usr/bin:/bin");
+            }
+        }
+    }
     cmd.env("HOME", home_dir);
     cmd.env("USER", username);
     cmd.env("LOGNAME", username);
+    cmd.env("SHELL", shell_path);
     cmd.args(args);
 
     setgid(Gid::from_raw(gid))
@@ -109,18 +125,21 @@ fn main() {
             eprintln!("Incorrect usage");
             exit(1);
         }
-        if let Some((uid, gid, home_dir, _entry_path)) = get_user_info(&username)
-            .unwrap_or_else(|e| {
-                eprintln!("Failed to get user info: {}", e);
-                exit(1);
-            }) {
+        if let Some((uid, gid, home_dir, shell_path)) = 
+            get_user_info(&username)
+                .unwrap_or_else(|e| {
+                    eprintln!("Failed to get user info: {}", e);
+                    exit(1);
+                }) {
             run(
                 &path,
                 uid,
                 gid,
                 &home_dir,
+                &shell_path,
                 &username,
-                &command_args
+                &command_args,
+                cli.preserve_enviroment
             );
         } else {
             eprintln!("User doesn't exist");
