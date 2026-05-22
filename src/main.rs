@@ -1,5 +1,6 @@
 mod args;
 
+use std::env::var;
 use std::io::Error as IOError;
 use std::fs::{read_to_string};
 use std::process::exit;
@@ -73,6 +74,7 @@ fn run(
     username: &str,
     args: &Vec<String>,
     preserve_env: bool,
+    whitelist_env: &Vec<String>,
 ) {
     const ROOT_PATH: &str = 
         "/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin";
@@ -93,6 +95,11 @@ fn run(
     cmd.env("USER", username);
     cmd.env("LOGNAME", username);
     cmd.env("SHELL", shell_path);
+    for item in whitelist_env {
+        if let Ok(val) = var(item) {
+            cmd.env(item, val);
+        }
+    }
     cmd.args(args);
 
     setgid(Gid::from_raw(gid))
@@ -139,7 +146,8 @@ fn main() {
                 &shell_path,
                 &username,
                 &command_args,
-                cli.preserve_enviroment
+                cli.preserve_enviroment,
+                &cli.whitelist_enviroment.unwrap_or(Vec::new())
             );
         } else {
             eprintln!("User doesn't exist");
