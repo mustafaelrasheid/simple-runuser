@@ -23,7 +23,7 @@ pub struct Cli {
     #[arg(short = 'g', long, value_name="group")]
     pub group: Option<String>,
     #[arg(short = 'G', long, value_name="supp-group")]
-    pub supp_group: Option<String>,
+    pub supp_group: Option<Vec<String>>,
     #[arg(short = 'l', long, action=ArgAction::SetTrue)]
     pub login: bool,
     #[arg(short = 'c', long, value_name="command")]
