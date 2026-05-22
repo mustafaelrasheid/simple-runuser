@@ -65,6 +65,24 @@ fn get_user_info(username: &str)
     }
 }
 
+fn get_group_info(groupname: &str) -> Result<Option<u32>, Box<dyn Error>> {
+    let info = get_conf("/etc/group", groupname)?;
+    
+    match info {
+        Some(parts) => {
+            let gid = parts
+                .get(2)
+                .ok_or("Invalid group format")?
+                .parse::<u32>()?;
+
+            return Ok(Some(gid));
+        },
+        None => {
+            return Ok(None);
+        }
+    }
+}
+
 fn run(
     path: &str,
     uid: u32,
@@ -138,6 +156,18 @@ fn main() {
                     eprintln!("Failed to get user info: {}", e);
                     exit(1);
                 }) {
+            let gid = if let Some(overwritten_group) = cli.group {
+                get_group_info(&overwritten_group)
+                    .unwrap_or_else(|e| {
+                        eprintln!("Failed to get group info: {}", e);
+                        exit(1);
+                    })
+                    .unwrap_or_else(|| {
+                        eprintln!("Group doesn't exist");
+                        exit(1);
+                    })
+            } else { gid };
+
             run(
                 &path,
                 uid,
