@@ -146,72 +146,87 @@ fn run(
 
 fn main() {
     let cli = Cli::parse();
-    
-    if let Some(username) = cli.user {
-        if cli.rest.is_empty() {
-            eprintln!("Incorrect usage");
-            exit(1);
-        }
-        let path = cli.rest[0].clone();
-        let command_args = cli.rest[1..].to_vec();
+    let supp_gids = if let Some(supp_groups) = cli.supp_group {
+        let mut supp_gids = Vec::new();
 
-        if let Some((uid, gid, home_dir, shell_path)) = 
-            get_user_info(&username)
-                .unwrap_or_else(|e| {
-                    eprintln!("Failed to get user info: {}", e);
-                    exit(1);
-                }) {
-            let gid = if let Some(overwritten_group) = cli.group {
-                get_group_info(&overwritten_group)
-                    .unwrap_or_else(|e| {
-                        eprintln!("Failed to get group info: {}", e);
-                        exit(1);
-                    })
-                    .unwrap_or_else(|| {
-                        eprintln!("Group doesn't exist");
-                        exit(1);
-                    })
-            } else { gid };
-            let supp_gids = if let Some(supp_groups) = cli.supp_group {
-                let mut supp_gids = Vec::new();
-
-                for supp_group in supp_groups {
-                    supp_gids.push(
-                        Gid::from_raw(
-                            get_group_info(&supp_group)
-                                .unwrap_or_else(|e| {
-                                    eprintln!(
-                                        "Failed to get supp group info: {}",
-                                        e
-                                    );
-                                    exit(1);
-                                })
-                                .unwrap_or_else(|| {
-                                    eprintln!("Supp group doesn't exist");
-                                    exit(1);
-                                })
-                        )
-                    );
-                }
-
-                Some(supp_gids)
-            } else { None };
-
-            run(
-                &path,
-                uid,
-                gid,
-                &supp_gids.unwrap_or(Vec::new()),
-                &home_dir,
-                &shell_path,
-                &username,
-                &command_args,
-                cli.preserve_env,
-                &cli.whitelist_env.unwrap_or(Vec::new())
+        for supp_group in supp_groups {
+            supp_gids.push(
+                Gid::from_raw(
+                    get_group_info(&supp_group)
+                        .unwrap_or_else(|e| {
+                            eprintln!("Failed to get supp group info: {}", e);
+                            exit(1);
+                        })
+                        .unwrap_or_else(|| {
+                            eprintln!("Supp group doesn't exist");
+                            exit(1);
+                        })
+                )
             );
-        } else {
-            eprintln!("User doesn't exist");
-            exit(1);
         }
+
+        Some(supp_gids)
+    } else { None };
+    let overwritten_gid = if let Some(overwritten_group) = cli.group {
+        Some(
+            get_group_info(&overwritten_group)
+                .unwrap_or_else(|e| {
+                    eprintln!("Failed to get group info: {}", e);
+                    exit(1);
+                })
+                .unwrap_or_else(|| {
+                    eprintln!("Group doesn't exist");
+                    exit(1);
+                })
+        )
+    } else { None };
+        
+    if cli.rest.is_empty() {
+        eprintln!("Incorrect usage");
+        exit(1);
     }
+    let (username, path, command_args) = match cli.user {
+        Some(username) => {
+            let path = cli.rest[0].clone();
+            let command_args = cli.rest[1..].to_vec();
+
+            (username, path, command_args)
+        },
+        None => {
+            let mut rest = cli.rest.clone();
+            
+            if &rest[0] == "-" {
+                rest.remove(0);
+            }
+            if rest.is_empty() {
+                eprintln!("Incorrect usage");
+                exit(1);
+            }
+            let username = rest[0].clone();
+            let command_args = rest[1..].to_vec();
+
+            (username, "sh".to_string(), command_args)
+        }
+    };
+    let (uid, gid, home_dir, shell_path) = get_user_info(&username)
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to get user info: {}", e);
+            exit(1);
+        }).unwrap_or_else(|| {
+        eprintln!("User doesn't exist");
+        exit(1);
+    });
+
+    run(
+        &path,
+        uid,
+        overwritten_gid.unwrap_or(gid),
+        &supp_gids.unwrap_or(Vec::new()),
+        &home_dir,
+        &shell_path,
+        &username,
+        &command_args,
+        cli.preserve_env,
+        &cli.whitelist_env.unwrap_or(Vec::new())
+    );
 }
