@@ -32,8 +32,8 @@ pub struct Cli {
     pub session_command: Option<String>,
     #[arg(short = 'f', long, action=ArgAction::SetTrue)]
     pub fast: bool,
-    #[arg(short = 's', long, action=ArgAction::SetTrue)]
-    pub shell: bool,
+    #[arg(short = 's', long, value_name="shell")]
+    pub shell: Option<String>,
     #[arg(short = 'P', long, action=ArgAction::SetTrue)]
     pub pty: bool,
     pub rest: Vec<String>,
