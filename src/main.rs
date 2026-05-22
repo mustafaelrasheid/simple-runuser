@@ -207,7 +207,10 @@ fn main() {
             let mut command_args = rest[1..].to_vec();
 
             if cli.login || hyphen {
-                command_args.insert(0, "-".to_string());
+                command_args.insert(0, "-l".to_string());
+            }
+            if cli.fast {
+                command_args.push("-f".to_string());
             }
 
             (username, cli.shell, command_args)
