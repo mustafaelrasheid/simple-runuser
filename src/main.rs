@@ -194,16 +194,21 @@ fn main() {
         },
         None => {
             let mut rest = cli.rest.clone();
-            
+            let mut hyphen: bool = false;
             if &rest[0] == "-" {
                 rest.remove(0);
+                hyphen = true;
             }
             if rest.is_empty() {
                 eprintln!("Incorrect usage");
                 exit(1);
             }
             let username = rest[0].clone();
-            let command_args = rest[1..].to_vec();
+            let mut command_args = rest[1..].to_vec();
+
+            if cli.login || hyphen {
+                command_args.insert(0, "-".to_string());
+            }
 
             (username, "sh".to_string(), command_args)
         }
