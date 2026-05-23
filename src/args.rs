@@ -34,6 +34,5 @@ pub struct Cli {
     pub fast: bool,
     #[arg(short = 's', long, value_name="shell")]
     pub shell: Option<String>,
-    #[arg(short = 'P', long, action=ArgAction::SetTrue)]
     pub rest: Vec<String>,
 }
