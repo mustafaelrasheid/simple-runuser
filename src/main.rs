@@ -3,8 +3,7 @@ mod args;
 use std::env::var;
 use std::io::Error as IOError;
 use std::fs::{read_to_string};
-use std::process::exit;
-use std::process::Command;
+use std::process::{exit, Command};
 use std::os::unix::process::CommandExt;
 use std::error::Error;
 use nix::unistd::{setuid, setgid, setsid, setgroups, Uid, Gid};
@@ -39,13 +38,16 @@ fn get_user_info(username: &str)
     
     match info {
         Some(parts) => {
+            if parts.len() < 7 {
+                return Err(
+                    "Invalid passwd format".into()
+                );
+            }
             let [_, _,
                 ref uid_str, ref gid_str, _,
                 ref home_dir, ref shell_path]
                 = parts[0..7] else {
-                return Err(
-                    "Invalid passwd format".into()
-                );
+                unreachable!()
             };
             let uid = uid_str.parse::<u32>()?;
             let gid = gid_str.parse::<u32>()?;
@@ -122,17 +124,17 @@ fn run(
     cmd.args(args);
     setgroups(supp_gids.as_slice())
         .unwrap_or_else(|e| {
-            eprintln!("Failed to set supp Gid to {} due to {}", uid, e);
+            eprintln!("Failed to set supp Gid: {}", e);
             exit(1);
         });
     setgid(Gid::from_raw(gid))
         .unwrap_or_else(|e| {
-            eprintln!("Failed to set Gid to {} due to {}", gid, e);
+            eprintln!("Failed to set Gid to {}: {}", gid, e);
             exit(1);
         });
     setuid(Uid::from_raw(uid))
         .unwrap_or_else(|e| {
-            eprintln!("Failed to set Uid to {} due to {}", uid, e);
+            eprintln!("Failed to set Uid to {}: {}", uid, e);
             exit(1);
         });
 
@@ -147,7 +149,7 @@ fn run(
 fn sep_session() {
     setsid()
         .unwrap_or_else(|e| {
-            eprintln!("Failed to set Sid due to {}", e);
+            eprintln!("Failed to set Sid: {}", e);
             exit(1);
         });
 }
@@ -238,9 +240,9 @@ fn main() {
             eprintln!("Failed to get user info: {}", e);
             exit(1);
         }).unwrap_or_else(|| {
-        eprintln!("User doesn't exist");
-        exit(1);
-    });
+            eprintln!("User doesn't exist");
+            exit(1);
+        });
 
     run(
         &path.unwrap_or(shell_path.clone()),
