@@ -7,7 +7,7 @@ use std::process::exit;
 use std::process::Command;
 use std::os::unix::process::CommandExt;
 use std::error::Error;
-use nix::unistd::{setuid, setgid, setgroups, Uid, Gid};
+use nix::unistd::{setuid, setgid, setsid, setgroups, Uid, Gid};
 use clap::Parser;
 use crate::args::Cli;
 
@@ -144,6 +144,14 @@ fn run(
     }
 }
 
+fn sep_session() {
+    setsid()
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to set Sid due to {}", e);
+            exit(1);
+        });
+}
+
 fn main() {
     let cli = Cli::parse();
     let supp_gids = if let Some(supp_groups) = cli.supp_group {
@@ -215,6 +223,11 @@ fn main() {
             if let Some(cmd) = &cli.command {
                 command_args.push("-c".to_string());
                 command_args.push(cmd.clone());
+            }
+            if let Some(cmd) = &cli.session_command {
+                command_args.push("-c".to_string());
+                command_args.push(cmd.clone());
+                sep_session();
             }
 
             (username, cli.shell, command_args)
