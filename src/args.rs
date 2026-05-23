@@ -2,7 +2,7 @@ use clap::{Parser, ArgAction};
 
 #[derive(Parser)]
 #[command(name = "runuser")]
-#[command(version = "0.1.0")]
+#[command(version = "1.0.0")]
 #[command(author = "mustafaelrasheid")]
 #[command(
     about = "simple runuser",
